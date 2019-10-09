@@ -1,4 +1,4 @@
 {
   "port": 3000,
-  "host": "test.nasa.gov"
+  "mongoUri": "mongodb+srv://application:Uli4ojjGtYhH6R1W@bowl-application-cluster-bnbur.gcp.mongodb.net/application"
 }
