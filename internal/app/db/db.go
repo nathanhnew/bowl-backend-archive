@@ -13,11 +13,18 @@ func Connect(uri string) *mongo.Client {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	client, _ := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	err := client.Ping(ctx, readpref.Primary())
-	fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return client
 }
 
 func GetContext(timeout time.Duration) context.Context {
-	ctx, _ := context.WithTimeout(context.Background(), timeout*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	return ctx
+}
+
+func Disconnect(client *mongo.Client) {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	client.Disconnect(ctx)
 }
