@@ -36,13 +36,22 @@ func GetConfig(location string) (*Config, error) {
 }
 
 func (config *Config) GetListenPort() int {
-	return int(config.Values["port"].(float64))
+	if port, ok := config.Values["port"]; ok {
+		return int(port.(float64))
+	}
+	return 0
 }
 
 func (config *Config) GetMongoUri() string {
-	return config.Values["mongoUri"].(string)
+	if uri, ok := config.Values["mongoUri"]; ok {
+		return uri.(string)
+	}
+	return ""
 }
 
 func (config *Config) GetMongoTimeout() time.Duration {
-	return config.Values["timeout"].(time.Duration)
+	if timeout, ok := config.Values["timeout"]; ok {
+		return timeout.(time.Duration)
+	}
+	return time.Second
 }
