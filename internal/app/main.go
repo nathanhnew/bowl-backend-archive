@@ -1,39 +1,33 @@
 package main
 
 import (
-	//"github.com/nathanhnew/bowl-backend/internal/app/controllers"
+	//"context"
 	//"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/nathanhnew/bowl-backend/internal/app/auth"
 	"github.com/nathanhnew/bowl-backend/internal/app/config"
-	"github.com/nathanhnew/bowl-backend/internal/app/db"
-	"github.com/nathanhnew/bowl-backend/internal/models"
-	//"github.com/gorilla/mux"
-	//"io/ioutil"
-	//"log"
-	//"net/http"
-	"go.mongodb.org/mongo-driver/bson"
+	"log"
+	"net/http"
 	//"os"
 )
 
 func main() {
-	//r := mux.NewRouter()
-	cfg, err := config.GetConfig(config.DefaultConfigLocation)
-	if err != nil {
-		fmt.Println(err)
-	}
-	//port := int(cfg["port"].(float64))
-	mongoUri := cfg.GetMongoUri()
-	ctx := db.GetContext(30)
-	client := db.Connect(mongoUri)
-	defer db.Disconnect(client)
-	var user models.User
-	collection := client.Database("application").Collection("User")
-	_ = collection.FindOne(ctx, bson.D{}).Decode(&user)
-	fmt.Printf("%+v\n", user)
-	fmt.Printf("Router initialized on port %d\n", cfg.GetListenPort())
-	//r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
-	//	http.FileServer(http.Dir("../assets/"))))
-	//r.HandleFunc("/teams", controllers.GetAllTeams).Methods("GET")
-	//
-	//log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
+	r := mux.NewRouter()
+
+	var cfg, _ = config.GetConfig(config.DefaultConfigLocation)
+
+	port := int(cfg.Values["port"].(float64))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
+		http.FileServer(http.Dir("../assets/"))))
+	r.HandleFunc("/users", auth.CreateUser).Methods("POST")
+	r.Handle("/users", auth.ValidToken(auth.DeleteUserHandler)).Methods("DELETE")
+	r.Handle("/users/{user}", auth.ValidToken(auth.GetUserHandler)).Methods("GET")
+	r.Handle("/users/{user}", auth.ValidToken(auth.UpdateUserHandler)).Methods("PATCH")
+	r.HandleFunc("/login", auth.Login).Methods("POST")
+
+	fmt.Printf("Listening to port %d\n", port)
+
+	//log.Fatal(http.ListenAndServe("localhost:3000", r))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
 }
