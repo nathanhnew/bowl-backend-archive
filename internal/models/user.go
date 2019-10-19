@@ -1,30 +1,79 @@
 package models
 
 import (
+	"encoding/json"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
 type User struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty"`
-	Name           userName           `bson:"name"`
-	Email          string             `bson:"email"`
-	Password       string             `bson:"password"`
-	FavoriteSchool primitive.ObjectID `bson:"favoriteSchool,omitempty"`
-	Theme          colorScheme        `bson:"theme,omitempty"`
-	Icon           string             `bson:"icon,omitempty"`
-	CreateTime     time.Time          `bson:"createTime"`
-	UpdateTime     time.Time          `bson:"updateTime"`
+	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name           userName           `json:"name" bson:"name"`
+	Email          string             `json:"email" bson:"email"`
+	Password       string             `json:"-" bson:"password"`
+	FavoriteSchool primitive.ObjectID `json:"favoriteSchool" bson:"favoriteSchool,omitempty"`
+	Theme          colorScheme        `json:"theme" bson:"theme,omitempty"`
+	Icon           string             `json:"icon" bson:"icon,omitempty"`
+	CreateTime     time.Time          `json:"-" bson:"createTime"`
+	UpdateTime     time.Time          `json:"-" bson:"updateTime"`
+	Token          json.Token         `json:"token" bson:"-"`
+	Active         bool               `json:"active" bson:"active"`
+	Admin          bool               `json:"-" bson:"admin"`
 }
 
 type userName struct {
-	First  string `bson:"first"`
-	Last   string `bson:"last"`
-	Suffix string `bson:"suffix,omitempty"`
+	First  string `json:"first" bson:"first"`
+	Last   string `json:"last" bson:"last"`
+	Suffix string `json:"suffix,omitempty" bson:"suffix,omitempty"`
 }
 
 type colorScheme struct {
-	PrimaryColor   string `bson:"primary,omitempty"`
-	SecondaryColor string `bson:"secondary,omitempty"`
-	TertiaryColor  string `bson:"tertiary,omitempty"`
+	PrimaryColor   string `json:"primaryColor" bson:"primary,omitempty"`
+	SecondaryColor string `json:"secondaryColor" bson:"secondary,omitempty"`
+	TertiaryColor  string `json:"tertiaryColor" bson:"tertiary,omitempty"`
+}
+
+func NewUser() User {
+	var user User
+	user.CreateTime = time.Now()
+	user.UpdateTime = time.Now()
+	user.Active = true
+	user.Admin = false
+	return user
+}
+
+func (user *User) UpdateFromMap(payload map[string]interface{}) {
+	for k, v := range payload {
+		if k == "firstName" {
+			user.Name.First = v.(string)
+		}
+		if k == "lastName" {
+			user.Name.Last = v.(string)
+		}
+		if k == "suffix" {
+			user.Name.Suffix = v.(string)
+		}
+		if k == "email" {
+			user.Email = v.(string)
+		}
+		if k == "favoriteSchool" {
+			user.FavoriteSchool = v.(primitive.ObjectID)
+		}
+		if k == "primaryColor" {
+			user.Theme.PrimaryColor = v.(string)
+		}
+		if k == "secondaryColor" {
+			user.Theme.SecondaryColor = v.(string)
+		}
+		if k == "tertiaryColor" {
+			user.Theme.TertiaryColor = v.(string)
+		}
+		if k == "icon" {
+			user.Icon = v.(string)
+		}
+		if k == "active" {
+			user.Active = v.(bool)
+		}
+		user.UpdateTime = time.Now()
+	}
 }
