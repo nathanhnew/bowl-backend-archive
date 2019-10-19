@@ -17,9 +17,9 @@ func main() {
 
 	var cfg, _ = config.GetConfig(config.DefaultConfigLocation)
 
-	port := int(cfg.Values["port"].(float64))
+	port := cfg.GetListenPort()
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
-		http.FileServer(http.Dir("../assets/"))))
+		http.FileServer(http.Dir("assets/"))))
 	r.HandleFunc("/users", auth.CreateUser).Methods("POST")
 	r.Handle("/users", auth.ValidToken(auth.DeleteUserHandler)).Methods("DELETE")
 	r.Handle("/users/{user}", auth.ValidToken(auth.GetUserHandler)).Methods("GET")
@@ -28,6 +28,5 @@ func main() {
 
 	fmt.Printf("Listening to port %d\n", port)
 
-	//log.Fatal(http.ListenAndServe("localhost:3000", r))
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
 }
