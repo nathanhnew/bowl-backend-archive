@@ -26,12 +26,6 @@ func NonExistentEmail(email string) (bool, error) {
 	return false, nil
 }
 
-func DeactivateUser(email string) error {
-	ctx = getContext()
-	_, err := Client.Database(database).Collection(userCollection).UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"active": false}})
-	return err
-}
-
 func DeleteUser(email string) error {
 	ctx = getContext()
 	_, err := Client.Database(database).Collection(userCollection).DeleteOne(ctx, bson.M{"email": email})

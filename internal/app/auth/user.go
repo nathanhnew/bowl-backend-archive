@@ -106,26 +106,6 @@ func CreateUser(w http.ResponseWriter, req *http.Request) {
 	return
 }
 
-func deactivateUser(w http.ResponseWriter, req *http.Request) {
-	params := mux.Vars(req)
-	var user string = params["user"]
-	reqEmail := req.Header.Get("authUser")
-	reqAdmin := req.Header.Get("authAdmin")
-	if reqEmail != user && reqAdmin == "false" {
-		http.Error(w, "Cannot deactivate this account", http.StatusForbidden)
-		fmt.Printf("User %s attempted to deactivate account %s\n", reqEmail, user)
-		return
-	}
-	err := db.DeactivateUser(user)
-	if err != nil {
-		http.Error(w, "Cannot deactivate user", http.StatusInternalServerError)
-		fmt.Printf("Unable to deactivate user %s\n%s\n", user, err)
-		return
-	}
-	fmt.Printf("Deactivated user %s\n", user)
-	return
-}
-
 func deleteUser(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	var user string = params["user"]
