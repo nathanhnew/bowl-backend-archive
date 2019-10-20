@@ -6,14 +6,13 @@ import (
 	"github.com/nathanhnew/bowl-backend/internal/app/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"time"
 )
 
 var cfg, _ = config.GetConfig(config.DefaultConfigLocation)
 var ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
-var Client *mongo.Client = Connect(cfg.GetMongoUri())
-var database = cfg.Values["mongoDatabase"].(string)
+var Client = Connect(cfg.GetMongoUri())
+var database = cfg.GetMongoDB()
 var userCollection = "User"
 var schoolCollection = "School"
 var leagueCollection = "League"
@@ -22,8 +21,7 @@ var pickCollection = "PickList"
 
 func Connect(uri string) *mongo.Client {
 	ctx = getContext()
-	client, _ := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
-	err := client.Ping(ctx, readpref.Primary())
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -36,6 +34,6 @@ func Disconnect(client *mongo.Client) {
 }
 
 func getContext() context.Context {
-	ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.GetMongoTimeout()*time.Second)
 	return ctx
 }

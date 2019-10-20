@@ -14,16 +14,16 @@ func CreateUser(user models.User) (*mongo.InsertOneResult, error) {
 	return result, err
 }
 
-func NonExistentEmail(email string) (bool, error) {
+func ValidateNewEmail(email string) (bool, error) {
 	ctx = getContext()
 	c, err := Client.Database(database).Collection(userCollection).Find(ctx, bson.D{{"email", email}, {"active", true}})
 	if err != nil {
 		return false, err
 	}
 	for c.Next(ctx) {
-		return true, nil
+		return false, nil
 	}
-	return false, nil
+	return true, nil
 }
 
 func DeleteUser(email string) error {
