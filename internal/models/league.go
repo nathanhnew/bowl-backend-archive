@@ -8,6 +8,7 @@ import (
 type League struct {
 	ID           primitive.ObjectID `bson:"_id"`
 	Name         string             `json:"name" bson:"name"`
+	Slug         string             `json:"slug" bson:"slug"`
 	Commissioner string             `json:"commissioner" bson:"commissioner"`
 	Seasons      []season           `json:"seasons" bson:"seasons,omitempty"`
 	Winners      []winner           `json:"winners" bson:"winners,omitempty"`

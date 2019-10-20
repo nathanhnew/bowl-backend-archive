@@ -18,25 +18,26 @@ type School struct {
 }
 
 type schoolName struct {
-	LongName     string `bson:"longName"`
-	ShortName    string `bson:"shortName"`
-	Abbreviation string `bson:"abbreviation"`
-	Slug         string `bson:"slug"`
+	Long         string `json:"longName" bson:"longName"`
+	Short        string `json:"shortName" bson:"shortName"`
+	Abbreviation string `json:"abbreviation" bson:"abbreviation"`
+	Slug         string `json:"slug" bson:"slug"`
 }
 
 type conference struct {
-	StartDate time.Time  `bson:"startDate"`
-	EndDate   *time.Time `bson:"endDate"`
-	Name      string     `bson:"name"`
+	StartDate time.Time  `json:"startDate" bson:"startDate"`
+	EndDate   *time.Time `json:"endDate" bson:"endDate,omitempty"`
+	Name      string     `json:"name" bson:"name"`
+	Slug      string     `json:"slug" bson:"slug"`
 }
 
 func (school *School) UpdateFromMap(payload map[string]interface{}) {
 	for k, v := range payload {
 		if k == "longName" {
-			school.Name.LongName = v.(string)
+			school.Name.Long = v.(string)
 		}
 		if k == "shortName" {
-			school.Name.ShortName = v.(string)
+			school.Name.Short = v.(string)
 		}
 		if k == "abbreviation" {
 			school.Name.Abbreviation = v.(string)
