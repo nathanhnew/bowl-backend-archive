@@ -6,7 +6,17 @@ import (
 	"github.com/nathanhnew/bowl-backend/internal/app/db"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"regexp"
 )
+
+func ValidEmail(email string) bool {
+	re := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	if re.Match([]byte(email)) {
+		return true
+	} else {
+		return false
+	}
+}
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	var creds credentials
@@ -20,11 +30,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad payload", http.StatusBadRequest)
 		return
 	}
-
+	if !ValidEmail(creds.Email) {
+		http.Error(w, "Invalid email address", http.StatusBadRequest)
+		return
+	}
 	user, err := db.GetUser(creds.Email)
-	fmt.Printf("%+v\n", user)
 	if err != nil {
-		http.Error(w, "Unable to verify account", http.StatusBadRequest)
+		http.Error(w, "Invalid credentials", http.StatusForbidden)
 		fmt.Printf("Unable to verify user: %s\n%s\n", creds.Email, err)
 		return
 	}

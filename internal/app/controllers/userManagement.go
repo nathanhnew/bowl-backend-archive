@@ -20,22 +20,26 @@ func CreateUser(w http.ResponseWriter, req *http.Request) {
 	var payload map[string]interface{}
 	decodeErr := json.NewDecoder(req.Body).Decode(&payload)
 	if decodeErr != nil {
-		http.Error(w, "Unable to read payload", 400)
+		http.Error(w, "Unable to read payload", http.StatusBadRequest)
 		fmt.Printf("%s\n", decodeErr)
 		return
 	}
 	if payload["email"].(string) == "" || payload["firstName"].(string) == "" || payload["lastName"].(string) == "" || payload["password"].(string) == "" {
-		http.Error(w, "Missing required fields", 400)
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
-	emailExists, err := db.NonExistentEmail(payload["email"].(string))
+	if !auth.ValidEmail(payload["email"].(string)) {
+		http.Error(w, "Invalid email address", http.StatusBadRequest)
+		return
+	}
+	newEmail, err := db.ValidateNewEmail(payload["email"].(string))
 	if err != nil {
 		fmt.Printf("email: %s\n", err)
-		http.Error(w, "Unable to verify email address", 400)
+		http.Error(w, "Unable to verify email address", http.StatusInternalServerError)
 		return
 	}
-	if emailExists == true {
-		http.Error(w, "Email already exists.", 400)
+	if newEmail == false {
+		http.Error(w, "Email already exists.", http.StatusBadRequest)
 		fmt.Printf("Email address %s attemped re-register\n", payload["email"].(string))
 		return
 	}
