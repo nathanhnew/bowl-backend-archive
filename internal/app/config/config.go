@@ -17,9 +17,6 @@ type Config struct {
 func GetConfig(location string) (*Config, error) {
 	var values map[string]interface{}
 	var cfg Config
-	if location == "" {
-		location = DefaultConfigLocation
-	}
 	cfgFile, err := os.Open(location)
 	if err != nil {
 		return nil, err
@@ -51,7 +48,28 @@ func (config *Config) GetMongoUri() string {
 
 func (config *Config) GetMongoTimeout() time.Duration {
 	if timeout, ok := config.Values["timeout"]; ok {
-		return timeout.(time.Duration)
+		return time.Duration(timeout.(float64))
 	}
 	return time.Second
+}
+
+func (config *Config) GetTokenTimeout() float64 {
+	if timeout, ok := config.Values["timeout"]; ok {
+		return timeout.(float64)
+	}
+	return 1
+}
+
+func (config *Config) GetValidationKey() []byte {
+	if key, ok := config.Values["validationKey"]; ok {
+		return []byte(key.(string))
+	}
+	return []byte("")
+}
+
+func (config *Config) GetMongoDB() string {
+	if db, ok := config.Values["mongoDatabase"]; ok {
+		return db.(string)
+	}
+	return ""
 }
