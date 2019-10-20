@@ -17,28 +17,28 @@ type credentials struct {
 	Password string `json:"password"`
 }
 
-func parseTokenClaims(tkn *jwt.Token, w *http.ResponseWriter, req *http.Request) {
+func parseTokenClaims(tkn *jwt.Token, w *http.ResponseWriter, req *http.Request) bool {
 	if claims, ok := tkn.Claims.(jwt.MapClaims); ok && tkn.Valid {
-		if claims["iss"] == nil || claims["expiresAt"] == nil {
-			fmt.Println("here")
+		if claims["expiresAt"] == nil {
 			http.Error(*w, "Invalid token", http.StatusForbidden)
-			return
+			return false
 		}
 		if exp, _ := time.Parse(time.RFC3339, claims["expiresAt"].(string)); ok {
 			if exp.Before(time.Now()) {
 				http.Error(*w, "Token Expired", http.StatusUnauthorized)
-				return
+				return false
 			}
 		} else {
 			http.Error(*w, "Invalid expiration", http.StatusForbidden)
-			return
+			return false
 		}
 		// If make it here, everything is OK
 		req.Header.Set("authUser", claims["email"].(string))
 		req.Header.Set("authAdmin", strconv.FormatBool(claims["admin"].(bool)))
+		return true
 	} else {
 		http.Error(*w, "Invalid authorization token", http.StatusForbidden)
-		return
+		return false
 	}
 }
 
@@ -63,7 +63,10 @@ func ValidToken(next http.Handler) http.Handler {
 			http.Error(w, "Unable to verify token", http.StatusForbidden)
 			return
 		}
-		parseTokenClaims(tkn, &w, req)
+		validToken := parseTokenClaims(tkn, &w, req)
+		if !validToken {
+			return
+		}
 		next.ServeHTTP(w, req)
 	})
 }
