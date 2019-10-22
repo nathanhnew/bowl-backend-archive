@@ -44,7 +44,7 @@ type duesConfig struct {
 }
 
 type payout struct {
-	Type    string `bson:"type"` // Fixed - fixed dollar value, percentage - pct of total money
+	Type    string `bson:"type"` // fixed - fixed dollar value, percentage - pct of total money
 	Amounts []struct {
 		Rank   float64     `json:"rank" bson:"rank"`
 		Amount interface{} `json:"amount" bson:"amount"`

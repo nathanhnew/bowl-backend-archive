@@ -25,11 +25,11 @@ func parseTokenClaims(tkn *jwt.Token, w *http.ResponseWriter, req *http.Request)
 		}
 		if exp, _ := time.Parse(time.RFC3339, claims["expiresAt"].(string)); ok {
 			if exp.Before(time.Now()) {
-				http.Error(*w, "Token Expired", http.StatusUnauthorized)
+				http.Error(*w, "Token Expired", http.StatusForbidden)
 				return false
 			}
 		} else {
-			http.Error(*w, "Invalid expiration", http.StatusForbidden)
+			http.Error(*w, "Invalid expiration", http.StatusUnauthorized)
 			return false
 		}
 		// If make it here, everything is OK

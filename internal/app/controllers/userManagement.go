@@ -134,13 +134,14 @@ func deleteUser(w http.ResponseWriter, req *http.Request) {
 
 func updateUser(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
-	var email = params["user"]
+	email := params["user"]
 	var payload map[string]interface{}
 	decodeErr := json.NewDecoder(req.Body).Decode(&payload)
 	if decodeErr != nil {
 		http.Error(w, "Unable to read payload", 400)
 		return
 	}
+	// Vefify user can make this change
 	reqEmail := req.Header.Get("authUser")
 	reqAdmin := req.Header.Get("authAdmin")
 	if reqEmail != email && reqAdmin == "false" {
@@ -148,6 +149,7 @@ func updateUser(w http.ResponseWriter, req *http.Request) {
 		fmt.Printf("User %s attempted to update account %s\n", reqEmail, email)
 		return
 	}
+	// Need to re-hash password if provided
 	if pwd, ok := params["password"]; ok {
 		pwd, hashErr := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
 		if hashErr != nil {
@@ -156,15 +158,6 @@ func updateUser(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		params["password"] = string(pwd)
-	}
-	if schoolSlug, ok := params["favoriteSchool"]; ok {
-		school, err := db.GetSchoolBySlug(schoolSlug)
-		if err != nil {
-			http.Error(w, "Unable to get school", http.StatusInternalServerError)
-			fmt.Printf("Unable to get school %s\n%s\n", schoolSlug, err)
-			return
-		}
-		payload["favoriteSchool"] = school.ID
 	}
 	user, err := db.UpdateUser(email, payload)
 	if err != nil {
