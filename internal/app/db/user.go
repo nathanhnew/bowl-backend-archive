@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"github.com/nathanhnew/bowl-backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -47,7 +46,6 @@ func UpdateUser(email string, payload map[string]interface{}) (models.User, erro
 		return user, err
 	}
 	user.UpdateFromMap(payload)
-	fmt.Printf("+%v\n\n\n", user)
 	_ = Client.Database(database).Collection(userCollection).FindOneAndReplace(ctx, bson.M{"email": email}, user)
 	return user, err
 }
