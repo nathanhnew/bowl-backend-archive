@@ -16,9 +16,18 @@ type League struct {
 	UpdateTime   time.Time          `json:"updateTime" bson:"updateTime"`
 }
 
+type LeagueHeadline struct {
+	Name           string    `json:"name" bson:"name"`
+	Slug           string    `json:"slug" bson:"slug"`
+	Commissioner   string    `json:"commissioner" bson:"commissioner"`
+	PreviousWinner string    `json:"previousWinner" bson:"-"`
+	NextBowl       string    `json:"nextBowl" bson:"-"`
+	NextBowlTime   time.Time `json:"nextBowlTime" bson:"-"`
+}
+
 type winner struct {
-	Winner primitive.ObjectID `json:"winner" bson:"winner"`
-	Season string             `json:"season" bson:"season"`
+	Winner string `json:"winner" bson:"winner"`
+	Season string `json:"season" bson:"season"`
 }
 
 type season struct {
