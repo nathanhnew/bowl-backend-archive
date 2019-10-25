@@ -32,6 +32,15 @@ func GetConfig(location string) (*Config, error) {
 	return &cfg, nil
 }
 
+func GetCurrentSeason() string {
+	now := time.Now()
+	if now.Month() < 0 {
+		return string(now.Year() - 1)
+	} else {
+		return string(now.Format("2006"))
+	}
+}
+
 func (config *Config) GetListenPort() int {
 	if port, ok := config.Values["port"]; ok {
 		return int(port.(float64))

@@ -22,10 +22,12 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
 		http.FileServer(http.Dir("assets/"))))
 	r.HandleFunc("/users", controllers.CreateUser).Methods("POST")
+	//r.Handle("/users", controllers.GetUsersHandler).Methods("GET")
 	r.Handle("/users", auth.ValidToken(controllers.DeleteUserHandler)).Methods("DELETE")
 	r.Handle("/users/{user}", auth.ValidToken(controllers.GetUserHandler)).Methods("GET")
 	r.Handle("/users/{user}", auth.ValidToken(controllers.UpdateUserHandler)).Methods("PATCH")
 	r.Handle("/users/{user}/leagues", auth.ValidToken(controllers.GetLeaguesByUserHandler)).Methods("GET")
+	r.Handle("/leagues", auth.ValidToken(controllers.GetLeaguesHandler)).Methods("GET")
 	r.HandleFunc("/login", auth.Login).Methods("POST")
 
 	fmt.Printf("Listening to port %d\n", port)
