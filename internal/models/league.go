@@ -11,7 +11,6 @@ type League struct {
 	Slug         string             `json:"slug" bson:"slug"`
 	Commissioner string             `json:"commissioner" bson:"commissioner"`
 	Seasons      []season           `json:"seasons" bson:"seasons,omitempty"`
-	Winners      []winner           `json:"winners" bson:"winners,omitempty"`
 	CreateTime   time.Time          `json:"createTime" bson:"createTime"`
 	UpdateTime   time.Time          `json:"updateTime" bson:"updateTime"`
 }
@@ -25,18 +24,14 @@ type LeagueHeadline struct {
 	NextBowlTime   time.Time `json:"nextBowlTime" bson:"-"`
 }
 
-type winner struct {
-	Winner string `json:"winner" bson:"winner"`
-	Season string `json:"season" bson:"season"`
-}
-
 type season struct {
-	Season             string               `json:"season" bson:"season"`
-	Players            []player             `json:"players" bson:"players,omitempty"`
-	Bowls              []primitive.ObjectID `json:"bowls" bson:"bowls,omitempty"`
-	SubmissionLockDate time.Time            `json:"submissionLockDate" bson:"submissionLockDate"`
-	Spread             spreadConfig         `json:"spread" bson:"spread"`
-	Dues               duesConfig           `json:"dues" bson:"dues"`
+	Season             string       `json:"season" bson:"season"`
+	Players            []player     `json:"players" bson:"players,omitempty"`
+	Bowls              []string     `json:"bowls" bson:"bowls,omitempty"`
+	SubmissionLockDate time.Time    `json:"submissionLockDate" bson:"submissionLockDate"`
+	Spread             spreadConfig `json:"spread" bson:"spread"`
+	Dues               duesConfig   `json:"dues" bson:"dues"`
+	Winner             string       `json:"winner" bson:"winner"`
 }
 
 type spreadConfig struct {
@@ -53,7 +48,7 @@ type duesConfig struct {
 }
 
 type payout struct {
-	Type    string `bson:"type"` // fixed - fixed dollar value, percentage - pct of total money
+	Type    string `json:"type" bson:"type"` // fixed - fixed dollar value, percentage - pct of total money
 	Amounts []struct {
 		Rank   float64     `json:"rank" bson:"rank"`
 		Amount interface{} `json:"amount" bson:"amount"`
@@ -64,6 +59,6 @@ type player struct {
 	User           string    `json:"user" bson:"user"`
 	Status         string    `json:"status" bson:"status"`
 	HasSubmitted   bool      `json:"hasSubmitted" bson:"hasSubmitted"`
-	SubmissionDate time.Time `json:"submissionDate" bson:"submissionDate,omitempty"`
+	SubmissionDate time.Time `json:"submissionDate,omitempty" bson:"submissionDate,omitempty"`
 	HasPaid        bool      `json:"hasPaid" bson:"hasPaid,omitempty"`
 }

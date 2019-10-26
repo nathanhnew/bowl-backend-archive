@@ -26,22 +26,24 @@ func GetLeaguesByUser(email string) ([]models.League, error) {
 	return leagues, nil
 }
 
-func getWinnerByLeague(leagueName string, winnerChan chan string) {
+func getWinnerByLeague(league string, winnerChan chan string) {
 	ctx = getContext()
 	payload := make(map[string]interface{})
 	cursor, err := Client.Database(database).Collection(leagueCollection).Aggregate(ctx, bson.A{
-		bson.M{"$match": bson.M{"name": leagueName}},
-		bson.M{"$unwind": "$winners"},
-		bson.M{"$sort": bson.M{"winners.season": -1}},
-		bson.M{"$project": bson.M{"winners.winner": 1, "_id": 0}},
-		bson.M{"$limit": 1}})
+		bson.M{"$match": bson.M{"slug": league}},
+		bson.M{"$unwind": "$seasons"},
+		bson.M{"$match": bson.M{"seasons.winner": bson.M{"$exists": true}}},
+		bson.M{"$sort": bson.M{"seasons.season": -1}},
+		bson.M{"$limit": 1},
+		bson.M{"$project": bson.M{"seasons.winner": 1, "_id": 0}},
+	})
 	if err != nil {
 		fmt.Printf("%+v", err)
 	}
 
 	for cursor.Next(ctx) {
 		cursor.Decode(&payload)
-		var lastWinner = payload["winners"].(map[string]interface{})["winner"].(string)
+		var lastWinner = payload["seasons"].(map[string]interface{})["winner"].(string)
 		winnerChan <- lastWinner
 	}
 }
@@ -114,7 +116,7 @@ func GetAllLeagueHeadlines(start int64, limit int64) ([]models.LeagueHeadline, e
 		winnerChan := make(chan string, 1)
 		nextGameChan := make(chan map[string]interface{}, 1)
 
-		go getWinnerByLeague(league.Name, winnerChan)
+		go getWinnerByLeague(league.Slug, winnerChan)
 		go getNextBowlFromList(getBowlsFromLeague(league.Slug, config.GetCurrentSeason()), config.GetCurrentSeason(), nextGameChan)
 
 		league.PreviousWinner = <-winnerChan
