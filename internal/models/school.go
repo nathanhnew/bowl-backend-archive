@@ -11,7 +11,7 @@ type School struct {
 	TeamName    string             `json:"teamName" bson:"teamName"`
 	Logo        string             `json:"logo" bson:"logo"`
 	Conferences []conference       `json:"conferences" bson:"conferences"`
-	Colors      colorScheme        `json:"colors" bson:"colors"`
+	Colors      ColorScheme        `json:"colors" bson:"colors"`
 	Location    Location           `json:"location" bson:"location"`
 	CreateTime  time.Time          `bson:"createTime"`
 	UpdateTime  time.Time          `bson:"updateTime"`

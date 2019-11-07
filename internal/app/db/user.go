@@ -15,11 +15,12 @@ func CreateUser(user models.User) (*mongo.InsertOneResult, error) {
 
 func ValidateNewEmail(email string) (bool, error) {
 	ctx = getContext()
-	c, err := Client.Database(database).Collection(userCollection).Find(ctx, bson.D{{"email", email}, {"active", true}})
+	cursor, err := Client.Database(database).Collection(userCollection).Find(ctx, bson.D{{"email", email}, {"active", true}})
 	if err != nil {
 		return false, err
 	}
-	for c.Next(ctx) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		return false, nil
 	}
 	return true, nil

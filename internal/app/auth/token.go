@@ -1,11 +1,11 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/nathanhnew/bowl-backend/internal/app/config"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -17,28 +17,34 @@ type credentials struct {
 	Password string `json:"password"`
 }
 
-func parseTokenClaims(tkn *jwt.Token, w *http.ResponseWriter, req *http.Request) bool {
+type Claim struct {
+	User    string
+	IsAdmin bool
+}
+
+func parseTokenClaims(tkn *jwt.Token, w *http.ResponseWriter, req *http.Request) (bool, Claim) {
+	var claim Claim
 	if claims, ok := tkn.Claims.(jwt.MapClaims); ok && tkn.Valid {
 		if claims["expiresAt"] == nil {
 			http.Error(*w, "Invalid token", http.StatusForbidden)
-			return false
+			return false, claim
 		}
 		if exp, _ := time.Parse(time.RFC3339, claims["expiresAt"].(string)); ok {
 			if exp.Before(time.Now()) {
 				http.Error(*w, "Token Expired", http.StatusForbidden)
-				return false
+				return false, claim
 			}
 		} else {
 			http.Error(*w, "Invalid expiration", http.StatusUnauthorized)
-			return false
+			return false, claim
 		}
 		// If make it here, everything is OK
-		req.Header.Set("authUser", claims["email"].(string))
-		req.Header.Set("authAdmin", strconv.FormatBool(claims["admin"].(bool)))
-		return true
+		claim.User = claims["email"].(string)
+		claim.IsAdmin = claims["admin"].(bool)
+		return true, claim
 	} else {
 		http.Error(*w, "Invalid authorization token", http.StatusForbidden)
-		return false
+		return false, claim
 	}
 }
 
@@ -63,10 +69,13 @@ func ValidToken(next http.Handler) http.Handler {
 			http.Error(w, "Unable to verify token", http.StatusForbidden)
 			return
 		}
-		validToken := parseTokenClaims(tkn, &w, req)
+		validToken, claims := parseTokenClaims(tkn, &w, req)
 		if !validToken {
 			return
 		}
+		//ctx, _ := context.WithTimeout(context.Background(), cfg.GetServerAuthTimeout()*time.Second)
+		ctx := context.WithValue(req.Context(), "auth", claims)
+		req = req.WithContext(ctx)
 		next.ServeHTTP(w, req)
 	})
 }

@@ -3,6 +3,8 @@ package models
 import (
 	"encoding/json"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -11,8 +13,8 @@ type User struct {
 	Name           userName           `json:"name" bson:"name"`
 	Email          string             `json:"email" bson:"email"`
 	Password       string             `json:"-" bson:"password"`
-	FavoriteSchool primitive.ObjectID `json:"favoriteSchool" bson:"favoriteSchool,omitempty"`
-	Theme          colorScheme        `json:"theme" bson:"theme,omitempty"`
+	FavoriteSchool string             `json:"favoriteSchool" bson:"favoriteSchool,omitempty"`
+	Theme          ColorScheme        `json:"theme" bson:"theme,omitempty"`
 	Icon           string             `json:"icon" bson:"icon,omitempty"`
 	CreateTime     time.Time          `json:"-" bson:"createTime"`
 	UpdateTime     time.Time          `json:"-" bson:"updateTime"`
@@ -27,7 +29,7 @@ type userName struct {
 	Suffix string `json:"suffix,omitempty" bson:"suffix,omitempty"`
 }
 
-type colorScheme struct {
+type ColorScheme struct {
 	PrimaryColor   string `json:"primaryColor" bson:"primary,omitempty"`
 	SecondaryColor string `json:"secondaryColor" bson:"secondary,omitempty"`
 	TertiaryColor  string `json:"tertiaryColor" bson:"tertiary,omitempty"`
@@ -42,22 +44,39 @@ func NewUser() User {
 	return user
 }
 
+func (theme *ColorScheme) UpdateFromMap(payload map[string]interface{}) {
+	for k, v := range payload {
+		if match, _ := regexp.Match("[P|p]rimary", []byte(k)); match {
+			theme.PrimaryColor = v.(string)
+		}
+		if match, _ := regexp.Match("[S|s]econdary", []byte(k)); match {
+			theme.SecondaryColor = v.(string)
+		}
+		if match, _ := regexp.Match("[T|t]ertiary", []byte(k)); match {
+			theme.TertiaryColor = v.(string)
+		}
+	}
+}
+
 func (user *User) UpdateFromMap(payload map[string]interface{}) {
 	for k, v := range payload {
+		if k == "email" {
+			user.Email = strings.ToLower(v.(string))
+		}
+		if k == "password" {
+			user.Password = v.(string)
+		}
 		if k == "firstName" {
-			user.Name.First = v.(string)
+			user.Name.First = strings.Title(v.(string))
 		}
 		if k == "lastName" {
-			user.Name.Last = v.(string)
+			user.Name.Last = strings.Title(v.(string))
 		}
 		if k == "suffix" {
-			user.Name.Suffix = v.(string)
-		}
-		if k == "email" {
-			user.Email = v.(string)
+			user.Name.Suffix = strings.Title(v.(string))
 		}
 		if k == "favoriteSchool" {
-			user.FavoriteSchool = v.(primitive.ObjectID)
+			user.FavoriteSchool = v.(string)
 		}
 		if k == "primaryColor" {
 			user.Theme.PrimaryColor = v.(string)

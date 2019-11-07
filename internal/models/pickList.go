@@ -18,10 +18,17 @@ type PickList struct {
 }
 
 type pick struct {
-	Bowl        string  `json:"bowl" bson:"bowl"`
-	Pick        string  `json:"pick" bson:"pick"`
-	Confidence  int     `json:"confidence" bson:"confidence"`
-	PointValue  float64 `json:"pointValue" bson:"pointValue"`
-	HasOccurred bool    `json:"hasOccurred" bson:"hasOccurred"`
-	IsCorrect   bool    `json:"isCorrect,omitempty" bson:"isCorrect,omitempty"`
+	Bowl       string  `json:"bowl" bson:"bowl"`
+	Pick       string  `json:"pick" bson:"pick"`
+	Confidence int     `json:"confidence" bson:"confidence"`
+	PointValue float64 `json:"pointValue" bson:"pointValue"`
+}
+
+func NewPickList() PickList {
+	picks := PickList{}
+	picks.CreateTime = time.Now()
+	picks.UpdateTime = time.Now()
+	picks.IsFinalized = false
+
+	return picks
 }

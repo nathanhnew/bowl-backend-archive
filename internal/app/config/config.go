@@ -82,3 +82,10 @@ func (config *Config) GetMongoDB() string {
 	}
 	return ""
 }
+
+func (config *Config) GetServerAuthTimeout() time.Duration {
+	if timeout, ok := config.Values["serverAuthTimeout"]; ok {
+		return time.Duration(timeout.(float64))
+	}
+	return time.Second
+}

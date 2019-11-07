@@ -12,85 +12,67 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"strings"
 )
 
-func CreateUser(w http.ResponseWriter, req *http.Request) {
+func ValidateNewUserPayload(payload map[string]interface{}, w http.ResponseWriter) bool {
+	if payload["email"].(string) == "" || payload["firstName"].(string) == "" || payload["lastName"].(string) == "" || payload["password"].(string) == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return false
+	}
+	if !auth.ValidEmail(payload["email"].(string)) {
+		http.Error(w, "Invalid email address", http.StatusBadRequest)
+		return false
+	}
+	validEmail, err := db.ValidateNewEmail(payload["email"].(string))
+	if err != nil {
+		fmt.Printf("email: %s\n", err)
+		http.Error(w, "Unable to verify email address", http.StatusInternalServerError)
+		return false
+	}
+	if validEmail == false {
+		http.Error(w, "Email already exists.", http.StatusBadRequest)
+		fmt.Printf("Email address %s attemped re-register\n", payload["email"].(string))
+		return false
+	}
+	return true
+}
+
+func createUser(w http.ResponseWriter, req *http.Request) {
 	user := models.NewUser()
+	vars := mux.Vars(req)
 	var payload map[string]interface{}
 	decodeErr := json.NewDecoder(req.Body).Decode(&payload)
+	payload["email"] = vars["user"]
 	if decodeErr != nil {
 		http.Error(w, "Unable to read payload", http.StatusBadRequest)
 		fmt.Printf("%s\n", decodeErr)
 		return
 	}
-	if payload["email"].(string) == "" || payload["firstName"].(string) == "" || payload["lastName"].(string) == "" || payload["password"].(string) == "" {
-		http.Error(w, "Missing required fields", http.StatusBadRequest)
-		return
-	}
-	if !auth.ValidEmail(payload["email"].(string)) {
-		http.Error(w, "Invalid email address", http.StatusBadRequest)
-		return
-	}
-	newEmail, err := db.ValidateNewEmail(payload["email"].(string))
-	if err != nil {
-		fmt.Printf("email: %s\n", err)
-		http.Error(w, "Unable to verify email address", http.StatusInternalServerError)
-		return
-	}
-	if newEmail == false {
-		http.Error(w, "Email already exists.", http.StatusBadRequest)
-		fmt.Printf("Email address %s attemped re-register\n", payload["email"].(string))
-		return
-	}
 
-	// Set Required fields
-	user.Email = strings.ToLower(payload["email"].(string))
-	user.Name.First = strings.Title(payload["firstName"].(string))
-	user.Name.Last = strings.Title(payload["lastName"].(string))
-	if suffix, ok := payload["suffix"].(string); ok {
-		user.Name.Suffix = strings.Title(suffix)
+	// Validation
+	isValid := ValidateNewUserPayload(payload, w)
+	if !isValid {
+		return
 	}
 
 	// Set Password
-	pwd, hashErr := bcrypt.GenerateFromPassword([]byte(payload["password"].(string)), bcrypt.DefaultCost)
-	if hashErr != nil {
+	if pwd, hashErr := bcrypt.GenerateFromPassword([]byte(payload["password"].(string)), bcrypt.DefaultCost); hashErr == nil {
 		http.Error(w, "Unable to create password hash", 500)
 		fmt.Printf("Unable to create password hash\n%s\n", hashErr)
 		return
-	}
-	user.Password = string(pwd)
-
-	favoriteSchool, err := db.GetSchoolBySlug(payload["favoriteSchool"].(string))
-	if err != nil {
-		http.Error(w, "School not found", 400)
-		fmt.Printf("Unable to find favorite school %s: %s\n", user.Email, payload["favoriteSchool"].(string))
-		return
-	}
-
-	user.FavoriteSchool = favoriteSchool.ID
-
-	if theme, ok := payload["theme"]; !ok {
-		user.Theme.PrimaryColor = favoriteSchool.Colors.PrimaryColor
-		user.Theme.SecondaryColor = favoriteSchool.Colors.SecondaryColor
-		user.Theme.TertiaryColor = favoriteSchool.Colors.TertiaryColor
 	} else {
-		user.Theme.PrimaryColor = theme.(map[string]string)["primary"]
-		user.Theme.PrimaryColor = theme.(map[string]string)["secondary"]
-		if tertiary, hasThree := theme.(map[string]string)["tertiary"]; hasThree {
-			user.Theme.TertiaryColor = tertiary
-		}
+		payload["password"] = string(pwd)
 	}
 
-	if icon, ok := payload["icon"].(string); ok {
-		user.Icon = icon
-	} else {
+	if _, ok := payload["icon"].(string); !ok {
 		files, err := ioutil.ReadDir("./assets/img/icon/default")
 		if err == nil {
 			i := rand.Intn(len(files))
-			user.Icon = files[i].Name()
+			payload["icon"] = files[i].Name()
 		}
 	}
+
+	user.UpdateFromMap(payload)
 
 	id, err := db.CreateUser(user)
 	if err != nil {
@@ -114,11 +96,10 @@ func CreateUser(w http.ResponseWriter, req *http.Request) {
 func deleteUser(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	var user string = params["user"]
-	tokenUser := req.Header.Get("authUser")
-	tokenAdmin := req.Header.Get("authAdmin")
-	if tokenUser != user && tokenAdmin == "false" {
+	authorized := req.Context().Value("auth").(auth.Claim)
+	if authorized.User != user && authorized.IsAdmin == false {
 		http.Error(w, "Cannot delete this account", http.StatusForbidden)
-		fmt.Printf("User %s attempted to delete account %s\n", tokenUser, user)
+		fmt.Printf("User %s attempted to delete account %s\n", authorized.User, user)
 		return
 	}
 	err := db.DeleteUser(user)
@@ -142,12 +123,24 @@ func updateUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	// Vefify user can make this change
-	reqEmail := req.Header.Get("authUser")
-	reqAdmin := req.Header.Get("authAdmin")
-	if reqEmail != email && reqAdmin == "false" {
+	authorized := req.Context().Value("auth").(auth.Claim)
+	if authorized.User != email && authorized.IsAdmin == false {
 		http.Error(w, "Cannot update this account", http.StatusForbidden)
-		fmt.Printf("User %s attempted to update account %s\n", reqEmail, email)
+		fmt.Printf("User %s attempted to update account %s\n", authorized.User, email)
 		return
+	}
+	// Verify that email doesn't exist if trying to change
+	if email, ok := payload["email"]; ok {
+		if validEmail, err := db.ValidateNewEmail(email.(string)); err != nil {
+			// Error
+			http.Error(w, "Unable to verify email address", http.StatusInternalServerError)
+			return
+		} else if !validEmail {
+			// Email already in system
+			http.Error(w, "Email already exists", http.StatusBadRequest)
+			return
+		}
+		// No problems, continue on
 	}
 	// Need to re-hash password if provided
 	if pwd, ok := params["password"]; ok {
@@ -159,6 +152,7 @@ func updateUser(w http.ResponseWriter, req *http.Request) {
 		}
 		params["password"] = string(pwd)
 	}
+	// Update user from the payload
 	user, err := db.UpdateUser(email, payload)
 	if err != nil {
 		http.Error(w, "Cannot update user", http.StatusInternalServerError)
@@ -186,3 +180,4 @@ func getUser(w http.ResponseWriter, req *http.Request) {
 var DeleteUserHandler = http.HandlerFunc(deleteUser)
 var UpdateUserHandler = http.HandlerFunc(updateUser)
 var GetUserHandler = http.HandlerFunc(getUser)
+var CreateUserHandler = http.HandlerFunc(createUser)

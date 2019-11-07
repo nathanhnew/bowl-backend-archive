@@ -13,6 +13,7 @@ type League struct {
 	Seasons      []season           `json:"seasons" bson:"seasons,omitempty"`
 	CreateTime   time.Time          `json:"createTime" bson:"createTime"`
 	UpdateTime   time.Time          `json:"updateTime" bson:"updateTime"`
+	Active       bool               `json:"active" bson:"active"`
 }
 
 type LeagueHeadline struct {
@@ -36,15 +37,15 @@ type season struct {
 
 type spreadConfig struct {
 	UseSpread bool      `json:"useSpread" bson:"useSpread"`
-	Simplify  string    `json:"simplify" bson:"simplify"`
-	LockDate  time.Time `json:"lockDate" bson:"lockDate"`
+	Simplify  string    `json:"simplify,omitempty" bson:"simplify,omitempty"`
+	LockDate  time.Time `json:"lockDate,omitempty" bson:"lockDate,omitempty"`
 }
 
 type duesConfig struct {
 	HasDues   bool    `json:"hasDues" bson:"hasDues"`
-	Amount    float64 `json:"amount" bson:"amount"`
-	UseOnline bool    `json:"useOnline" bson:"useOnline"`
-	Payout    payout  `json:"payout" bson:"payout,omitempty"`
+	Amount    float64 `json:"amount,omitempty" bson:"amount,omitempty"`
+	UseOnline bool    `json:"useOnline,omitempty" bson:"useOnline,omitempty"`
+	Payout    payout  `json:"payout,omitempty" bson:"payout,omitempty,omitempty"`
 }
 
 type payout struct {
@@ -60,5 +61,45 @@ type player struct {
 	Status         string    `json:"status" bson:"status"`
 	HasSubmitted   bool      `json:"hasSubmitted" bson:"hasSubmitted"`
 	SubmissionDate time.Time `json:"submissionDate,omitempty" bson:"submissionDate,omitempty"`
-	HasPaid        bool      `json:"hasPaid" bson:"hasPaid,omitempty"`
+	HasPaid        bool      `json:"hasPaid,omitempty" bson:"hasPaid,omitempty"`
+}
+
+func NewLeague() League {
+	league := League{}
+	league.ID = primitive.NewObjectID()
+	league.CreateTime = time.Now()
+	league.UpdateTime = time.Now()
+	league.Active = true
+	return league
+}
+
+func (league *League) UpdateFromMap(payload map[string]interface{}) {
+	for k, v := range payload {
+		if k == "name" {
+			league.Name = v.(string)
+		}
+		if k == "slug" {
+			league.Slug = v.(string)
+		}
+		if k == "commissioner" {
+			league.Commissioner = v.(string)
+		}
+		if k == "active" {
+			league.Active = v.(bool)
+		}
+	}
+}
+
+func (season *season) UpdateFromMap(payload map[string]interface{}) {
+	for k, v := range payload {
+		if k == "season" {
+			season.Season = v.(string)
+		}
+		if k == "submissionLockDate" {
+			season.SubmissionLockDate = v.(time.Time)
+		}
+		if k == "spread" {
+
+		}
+	}
 }
